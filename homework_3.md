@@ -1,0 +1,219 @@
+-- Запит 1: Створення схеми
+
+CREATE DATABASE LibraryManagement;
+USE LibraryManagement;
+
+-- Таблиця "authors"
+CREATE TABLE authors (
+    author_id INT AUTO_INCREMENT PRIMARY KEY,
+    author_name VARCHAR(255) NOT NULL
+);
+
+-- Таблиця "genres"
+CREATE TABLE genres (
+    genre_id INT AUTO_INCREMENT PRIMARY KEY,
+    genre_name VARCHAR(255) NOT NULL
+);
+
+-- Таблиця "books"
+CREATE TABLE books (
+    book_id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    publication_year YEAR NOT NULL,
+    author_id INT NOT NULL,
+    genre_id INT NOT NULL,
+    FOREIGN KEY (author_id) REFERENCES authors(author_id),
+    FOREIGN KEY (genre_id) REFERENCES genres(genre_id)
+);
+
+-- Таблиця "users"
+CREATE TABLE users (
+    user_id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL
+);
+
+-- Таблиця "borrowed_books"
+CREATE TABLE borrowed_books (
+    borrow_id INT AUTO_INCREMENT PRIMARY KEY,
+    book_id INT NOT NULL,
+    user_id INT NOT NULL,
+    borrow_date DATE NOT NULL,
+    return_date DATE,
+    FOREIGN KEY (book_id) REFERENCES books(book_id),
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
+__________________________________________________________________________________
+
+-- Запит 2: Заповнення таблиць
+
+-- Таблиця "authors"
+INSERT INTO authors (author_name)
+VALUES
+('J.K. Rowling'),
+('George Orwell');
+
+-- Таблиця "genres"
+INSERT INTO genres (genre_name)
+VALUES
+('Fantasy'),
+('Dystopia');
+
+-- Таблиця "books"
+INSERT INTO books (title, publication_year, author_id, genre_id)
+VALUES
+('Harry Potter and the Philosopher\'s Stone', 1997, 1, 1),
+('1984', 1949, 2, 2);
+
+-- Таблиця "users"
+INSERT INTO users (username, email)
+VALUES
+('john_doe', 'john.doe@example.com'),
+('jane_smith', 'jane.smith@example.com');
+
+-- Таблиця "borrowed_books"
+INSERT INTO borrowed_books (book_id, user_id, borrow_date, return_date)
+VALUES
+(1, 1, '2024-11-01', '2024-11-15'),
+(2, 2, '2024-11-10', NULL); -- Книга ще не повернута
+
+__________________________________________________________________________________
+
+-- Запит 3: Об’єднання всіх таблиць з попередньої домашньої роботи
+
+SELECT
+    order_details.id AS order_detail_id,
+    orders.id AS order_id,
+    orders.date AS order_date,
+    customers.name AS customer_name,
+    products.name AS product_name,
+    categories.name AS category_name,
+    employees.first_name AS employee_first_name,
+    employees.last_name AS employee_last_name,
+    shippers.name AS shipper_name,
+    suppliers.name AS supplier_name,
+    order_details.quantity,
+    products.price AS unit_price,
+    order_details.quantity * products.price AS total_price
+FROM
+    order_details
+INNER JOIN orders ON order_details.order_id = orders.id
+INNER JOIN customers ON orders.customer_id = customers.id
+INNER JOIN products ON order_details.product_id = products.id
+INNER JOIN categories ON products.category_id = categories.id
+INNER JOIN employees ON orders.employee_id = employees.employee_id
+INNER JOIN shippers ON orders.shipper_id = shippers.id
+INNER JOIN suppliers ON products.supplier_id = suppliers.id;
+
+__________________________________________________________________________________
+
+-- Запит 4.1: Визначення кількості рядків
+
+SELECT COUNT(*) AS total_rows
+FROM order_details
+INNER JOIN orders ON order_details.order_id = orders.id
+INNER JOIN customers ON orders.customer_id = customers.id
+INNER JOIN products ON order_details.product_id = products.id
+INNER JOIN categories ON products.category_id = categories.id
+INNER JOIN employees ON orders.employee_id = employees.employee_id
+INNER JOIN shippers ON orders.shipper_id = shippers.id
+INNER JOIN suppliers ON products.supplier_id = suppliers.id;
+
+__________________________________________________________________________________
+
+-- Запит 4.2.1: Заміна INNER JOIN на LEFT JOIN
+
+SELECT COUNT(*) AS total_rows_with_left_join
+FROM order_details
+LEFT JOIN orders ON order_details.order_id = orders.id
+LEFT JOIN customers ON orders.customer_id = customers.id
+LEFT JOIN products ON order_details.product_id = products.id
+LEFT JOIN categories ON products.category_id = categories.id
+LEFT JOIN employees ON orders.employee_id = employees.employee_id
+LEFT JOIN shippers ON orders.shipper_id = shippers.id
+LEFT JOIN suppliers ON products.supplier_id = suppliers.id;
+
+LEFT JOIN: Даний запит повернув всі рядки з лівої таблиці і відповідні рядки з правої таблиці. Кількість рядків лишилася без змін.
+Це означає, що всі рядки з лівої таблиці мають відповідності в правій таблиці.
+__________________________________________________________________________________
+
+-- Запит 4.2.2: Заміна INNER JOIN на RIGHT JOIN
+
+SELECT COUNT(*) AS total_rows_with_right_join
+FROM order_details
+RIGHT JOIN orders ON order_details.order_id = orders.id
+RIGHT JOIN customers ON orders.customer_id = customers.id
+RIGHT JOIN products ON order_details.product_id = products.id
+RIGHT JOIN categories ON products.category_id = categories.id
+RIGHT JOIN employees ON orders.employee_id = employees.employee_id
+RIGHT JOIN shippers ON orders.shipper_id = shippers.id
+RIGHT JOIN suppliers ON products.supplier_id = suppliers.id;
+
+RiGHT JOIN: запит повинен повернути всі рядки з правої таблиці і відповідні рядки з лівої таблиці. 
+Даний запит викликав збій усієї системи, аж до проблем з диском C, в якому почалося надмірне використання пам'яті. Врятувало аварійне перезавантаження пристрою.
+Можливо це пояснюється тим, що правa таблиця містить багато рядків без відповідності в лівій таблиці, що призводить до надмірного обсягу даних.
+__________________________________________________________________________________
+
+-- Запит 4.3: Рядки, де employee_id > 3 та ≤ 10
+
+SELECT *
+FROM orders
+INNER JOIN employees ON orders.employee_id = employees.employee_id
+WHERE orders.employee_id > 3 AND orders.employee_id <= 10;
+
+__________________________________________________________________________________
+
+-- Запит 4.4: Групування за іменем категорії; кількість рядків у групі, середня кількість товару
+
+SELECT
+    categories.name AS category_name,
+    COUNT(*) AS row_count,
+    AVG(order_details.quantity) AS avg_quantity
+FROM order_details
+INNER JOIN products ON order_details.product_id = products.id
+INNER JOIN categories ON products.category_id = categories.id
+GROUP BY categories.name;
+
+__________________________________________________________________________________
+
+-- Запит 4.5: Рядки, де середня кількість товару більша за 21
+
+SELECT
+    categories.name AS category_name,
+    COUNT(*) AS row_count,
+    AVG(order_details.quantity) AS avg_quantity
+FROM order_details
+INNER JOIN products ON order_details.product_id = products.id
+INNER JOIN categories ON products.category_id = categories.id
+GROUP BY categories.name
+HAVING AVG(order_details.quantity) > 21;
+
+__________________________________________________________________________________
+
+-- Запит 4.6: Фільтрація рядків за спаданням кількості рядків
+
+SELECT
+    categories.name AS category_name,
+    COUNT(*) AS row_count,
+    AVG(order_details.quantity) AS avg_quantity
+FROM order_details
+INNER JOIN products ON order_details.product_id = products.id
+INNER JOIN categories ON products.category_id = categories.id
+GROUP BY categories.name
+ORDER BY row_count DESC;
+
+__________________________________________________________________________________
+
+-- Запит 4.7: Чотири рядки з пропущеним першим рядком
+
+SET @row_num = 0;
+
+SELECT *
+FROM (
+    SELECT (@row_num := @row_num + 1) AS row_num, order_details.*
+    FROM order_details
+    ORDER BY order_details.id
+) AS subquery
+WHERE row_num > 1
+LIMIT 4; Я хочу це вставити у файл мд. Можеш гарно оформити?
